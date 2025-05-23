@@ -1,19 +1,19 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Worker = require('../models/Worker');
-const multer = require('multer');
-const path = require('path');
-
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const Worker = require("../models/Worker");
+const multer = require("multer");
+const path = require("path");
+const bcrypt = require("bcryptjs");
 // Setup multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/ids');
+    cb(null, "uploads/ids");
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
-  }
+  },
 });
 
 const upload = multer({
@@ -22,25 +22,34 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|pdf/;
     const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
+    const extname = filetypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+
     if (mimetype && extname) {
       return cb(null, true);
     }
-    
-    cb(new Error('File upload only supports images and PDFs'));
-  }
+
+    cb(new Error("File upload only supports images and PDFs"));
+  },
 });
 
 // Register client
-router.post('/register/client', async (req, res) => {
+router.post("/register/client", async (req, res) => {
   try {
-    const { name, email, phone, location, password } = req.body;
+    const { name, email, phone, location, password } = await req.body;
 
-    // Check if user already exists
+    if (!name || !email || !phone || !location || !password) {
+      console.error("All fields required");
+      return res.status(500).json({ error: "All fields required" });
+    }
+
     let user = await User.findOne({ email });
+
     if (user) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res
+        .status(400)
+        .json({ error: "User with this email already exists" });
     }
 
     // Create new user
@@ -50,13 +59,15 @@ router.post('/register/client', async (req, res) => {
       phone,
       location,
       password,
-      userType: 'client'
+      userType: "client",
     });
 
     await user.save();
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
 
     res.status(201).json({
       token,
@@ -64,90 +75,108 @@ router.post('/register/client', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        userType: user.userType
-      }
+        userType: user.userType,
+      },
     });
+    res.status(200).json({ message: req.body });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
 // Register worker
-router.post('/register/worker', upload.single('idDocument'), async (req, res) => {
-  try {
-    const { name, email, phone, address, serviceType, experience, bio, password } = req.body;
+router.post(
+  "/register/worker",
+  upload.single("idDocument"),
+  async (req, res) => {
+    try {
+      const {
+        name,
+        email,
+        phone,
+        address,
+        serviceType,
+        experience,
+        bio,
+        password,
+      } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'ID Document is required' });
-    }
-
-    // Check if user already exists
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    // Create new user
-    user = new User({
-      name,
-      email,
-      phone,
-      address,
-      password,
-      userType: 'worker'
-    });
-
-    await user.save();
-
-    // Create worker profile
-    const worker = new Worker({
-      user: user._id,
-      serviceType,
-      experience,
-      bio,
-      idDocument: req.file.path
-    });
-
-    await worker.save();
-
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        userType: user.userType
+      if (!req.file) {
+        return res.status(400).json({ error: "ID Document is required" });
       }
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+
+      // Check if user already exists
+      let user = await User.findOne({ email });
+      if (user) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+
+      // Create new user
+      user = new User({
+        name,
+        email,
+        phone,
+        address,
+        password,
+        userType: "worker",
+      });
+
+      await user.save();
+
+      // Create worker profile
+      const worker = new Worker({
+        user: user._id,
+        serviceType,
+        experience,
+        bio,
+        idDocument: req.file.path,
+      });
+
+      await worker.save();
+
+      // Generate JWT token
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "30d",
+      });
+
+      res.status(201).json({
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          userType: user.userType,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Server error" });
+    }
   }
-});
+);
 
 // Login
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(400).json({ error: "Invalid credentials" });
     }
 
     // Check if password is correct
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(400).json({ error: "Invalid credentials" });
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
 
     res.json({
       token,
@@ -155,12 +184,12 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        userType: user.userType
-      }
+        userType: user.userType,
+      },
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
