@@ -37,6 +37,7 @@ const upload = multer({
 // Register client
 router.post("/register/client", async (req, res) => {
   try {
+    console.log(req.headers)
     const { name, email, phone, location, password } = await req.body;
 
     if (!name || !email || !phone || !location || !password) {

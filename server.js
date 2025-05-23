@@ -10,12 +10,13 @@ const bookingRoutes = require("./routes/bookings");
 const app = express();
 const PORT = process.env.PORT || 2345;
 const ratingRoutes = require("./routes/ratings");
+const auth = require("./middleware/authmiddleware");
 
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", auth, authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
