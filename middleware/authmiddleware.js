@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    // const token = req.header('Authorization');
     
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });

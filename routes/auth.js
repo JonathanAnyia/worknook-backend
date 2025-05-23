@@ -6,6 +6,8 @@ const Worker = require("../models/Worker");
 const multer = require("multer");
 const path = require("path");
 const bcrypt = require("bcryptjs");
+
+
 // Setup multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -37,7 +39,7 @@ const upload = multer({
 // Register client
 router.post("/register/client", async (req, res) => {
   try {
-    console.log(req.headers)
+    // res.setHeader("Content-Type", "application/json");
     const { name, email, phone, location, password } = await req.body;
 
     if (!name || !email || !phone || !location || !password) {
@@ -79,7 +81,7 @@ router.post("/register/client", async (req, res) => {
         userType: user.userType,
       },
     });
-    res.status(200).json({ message: req.body });
+    res.status(200).json({ message: 'User successfully signed up' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
