@@ -7,7 +7,6 @@ const multer = require("multer");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 
-
 // Setup multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -40,9 +39,18 @@ const upload = multer({
 router.post("/register/client", async (req, res) => {
   try {
     // res.setHeader("Content-Type", "application/json");
-    const { name, email, phone, location, password } = await req.body;
+    const { fullName, email, phone, address, password, lga, state } =
+      await req.body;
 
-    if (!name || !email || !phone || !location || !password) {
+    if (
+      !fullName ||
+      !email ||
+      !phone ||
+      !address ||
+      !password ||
+      !lga ||
+      !state
+    ) {
       console.error("All fields required");
       return res.status(500).json({ error: "All fields required" });
     }
@@ -57,12 +65,15 @@ router.post("/register/client", async (req, res) => {
 
     // Create new user
     user = new User({
-      name,
+      fullName,
       email,
       phone,
-      location,
+      address,
       password,
+      state,
+      city: lga,
       userType: "client",
+      message: "User created successfully",
     });
 
     await user.save();
@@ -76,12 +87,12 @@ router.post("/register/client", async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        name: user.fullName,
         email: user.email,
         userType: user.userType,
       },
     });
-    res.status(200).json({ message: 'User successfully signed up' });
+    res.status(200).json({ message: "User successfully signed up" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -188,6 +199,7 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         userType: user.userType,
+        message: "User successfully logged in",
       },
     });
   } catch (error) {
