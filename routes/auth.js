@@ -136,7 +136,7 @@ router.post("/register/worker", async (req, res) => {
       password,
       state,
       city: lga,
-      userType: "client",
+      userType: "worker",
       message: "User created successfully",
     });
 
