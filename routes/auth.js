@@ -72,7 +72,7 @@ router.post("/register/client", async (req, res) => {
       password,
       state,
       city: lga,
-      userType: "client",
+      userType: "Worker",
       message: "User created successfully",
     });
 
@@ -136,7 +136,7 @@ router.post("/register/worker", async (req, res) => {
       password,
       state,
       city: lga,
-      userType: "worker",
+      userType: "Client",
       message: "User created successfully",
     });
 
@@ -162,7 +162,6 @@ router.post("/register/worker", async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 });
-
 
 // Login
 router.post("/login", async (req, res) => {
